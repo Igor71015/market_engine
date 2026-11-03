@@ -9,14 +9,56 @@ class Product:
     ) -> None:
         self.name = name
         self.description = description
-        self.price = price
+        self.__price = price  # Приватный атрибут цены
         self.quantity = quantity
+
+    @classmethod
+    def new_product(
+        cls, product_data: dict, current_products: list | None = None
+    ) -> "Product":
+        """Создает продукт из словаря (с проверкой дубликатов)."""
+        name = product_data["name"]
+        description = product_data["description"]
+        price = product_data["price"]
+        quantity = product_data["quantity"]
+
+        if current_products:
+            for existing_product in current_products:
+                if existing_product.name == name:
+                    existing_product.quantity += quantity
+                    if price > existing_product.price:
+                        existing_product.price = price
+                    return existing_product
+
+        return cls(name, description, price, quantity)
+
+    @property
+    def price(self) -> float:
+        """Геттер для цены."""
+        return self.__price
+
+    @price.setter
+    def price(self, new_price: float) -> None:
+        """Сеттер для цены с проверками и подтверждением снижения."""
+        if new_price <= 0:
+            print("Цена не должна быть нулевая или отрицательная")
+            return
+
+        if new_price < self.__price:
+            user_choice = input(
+                f"Вы уверены, что хотите снизить цену с {self.__price} "
+                f"до {new_price}? (y/n): "
+            )
+            if user_choice.lower() != "y":
+                print("Снижение цены отменено")
+                return
+
+        self.__price = new_price
 
 
 class Category:
     """Класс для представления категории товаров."""
 
-    # Атрибуты класса для подсчета общего количества
     category_count = 0
     product_count = 0
 
@@ -25,12 +67,29 @@ class Category:
     ) -> None:
         self.name = name
         self.description = description
-        self.products = products if products is not None else []
+        self.__products = []  # Приватный атрибут списка товаров
 
-        # Автоматический подсчет при создании нового объекта категории
         Category.category_count += 1
-        # Подсчитываем количество уникальных товаров в этой категории
-        Category.product_count += len(self.products)
+
+        if products:
+            for product in products:
+                self.add_product(product)
+
+    def add_product(self, product: Product) -> None:
+        """Добавляет продукт в категорию и обновляет счетчик товаров."""
+        self.__products.append(product)
+        Category.product_count += 1
+
+    @property
+    def products(self) -> str:
+        """Геттер возвращает список товаров в виде отформатированных строк."""
+        result = ""
+        for product in self.__products:
+            result += (
+                f"{product.name}, {product.price} руб. "
+                f"Остаток: {product.quantity} шт.\n"
+            )
+        return result
 
 
 def load_data_from_json(file_path: str) -> list[Category]:

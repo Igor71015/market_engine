@@ -31,7 +31,7 @@ def test_category_initialization(sample_products):
     category = Category("Электроника", "Гаджеты и техника", sample_products)
     assert category.name == "Электроника"
     assert category.description == "Гаджеты и техника"
-    assert len(category.products) == 2
+    assert "Samsung Galaxy S23 Ultra" in category.products
 
 
 def test_category_counters(sample_products):
@@ -60,4 +60,43 @@ def test_load_data_from_json(tmp_path):
     result = load_data_from_json(str(test_file))
     assert len(result) == 1
     assert result[0].name == "Смартфоны"
-    assert result[0].products[0].name == "Iphone"
+
+
+def test_price_setter_invalid(capsys):
+    """Тест попытки установить некорректную цену."""
+    product = Product("Телевизор", "4K Smart TV", 50000.0, 3)
+    product.price = -100
+    captured = capsys.readouterr()
+    assert "Цена не должна быть нулевая или отрицательная" in captured.out
+    assert product.price == 50000.0
+
+
+def test_price_setter_decrease_confirm(monkeypatch):
+    """Тест подтверждения снижения цены."""
+    product = Product("Телевизор", "4K Smart TV", 50000.0, 3)
+    monkeypatch.setattr("builtins.input", lambda _: "y")
+    product.price = 45000.0
+    assert product.price == 45000.0
+
+
+def test_price_setter_decrease_cancel(monkeypatch, capsys):
+    """Тест отмены снижения цены."""
+    product = Product("Телевизор", "4K Smart TV", 50000.0, 3)
+    monkeypatch.setattr("builtins.input", lambda _: "n")
+    product.price = 45000.0
+    captured = capsys.readouterr()
+    assert "Снижение цены отменено" in captured.out
+    assert product.price == 50000.0
+
+
+def test_new_product_duplicate():
+    """Тест создания продукта с обработкой дубликатов."""
+    p1 = Product("Iphone", "128GB", 1000.0, 5)
+    data = {
+        "name": "Iphone", "description": "256GB",
+        "price": 1200.0, "quantity": 3
+    }
+
+    updated_product = Product.new_product(data, [p1])
+    assert updated_product.quantity == 8
+    assert updated_product.price == 1200.0
