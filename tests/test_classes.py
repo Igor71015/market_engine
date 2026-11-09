@@ -1,5 +1,5 @@
 import pytest
-from src.classes import Category, Product, load_data_from_json
+from src.classes import Category, CategoryIter, Product, load_data_from_json
 
 
 @pytest.fixture(autouse=True)
@@ -100,3 +100,35 @@ def test_new_product_duplicate():
     updated_product = Product.new_product(data, [p1])
     assert updated_product.quantity == 8
     assert updated_product.price == 1200.0
+
+
+def test_product_str():
+    """Тест магического метода __str__ класса Product."""
+    product = Product("Телевизор", "4K Smart TV", 50000.0, 3)
+    assert str(product) == "Телевизор, 50000.0 руб. Остаток: 3 шт."
+
+
+def test_category_str(sample_products):
+    """Тест магического метода __str__ класса Category."""
+    category = Category("Электроника", "Гаджеты", sample_products)
+    assert str(category) == "Электроника, количество продуктов: 15 шт."
+
+
+def test_product_add():
+    """Тест магического метода __add__ класса Product."""
+    p1 = Product("Товар A", "Описание", 100.0, 10)
+    p2 = Product("Товар B", "Описание", 200.0, 2)
+    assert p1 + p2 == 1400.0
+
+
+def test_category_iterator(sample_products):
+    """Тест итератора для обхода товаров категории."""
+    category = Category("Электроника", "Гаджеты", sample_products)
+    iterator = CategoryIter(category)
+
+    products_iterated = []
+    for product in iterator:
+        products_iterated.append(product)
+
+    assert len(products_iterated) == 2
+    assert products_iterated[0].name == "Samsung Galaxy S23 Ultra"
