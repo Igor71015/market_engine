@@ -13,12 +13,14 @@ class Product:
         self.quantity = quantity
 
     def __str__(self) -> str:
-        """Строковое отображение продукта."""
-        return f"{self.name}, {self.price} руб. Остаток: {self.quantity} шт."
+        """Строковое отображение продукта с приватным атрибутом."""
+        return f"{self.name}, {self.__price} руб. Остаток: {self.quantity} шт."
 
     def __add__(self, other: "Product") -> float:
-        """Сложение продуктов (сумма стоимости всех товаров на складе)."""
-        return (self.price * self.quantity) + (other.price * other.quantity)
+        """Сложение продуктов с использованием приватных атрибутов."""
+        return (
+            (self.__price * self.quantity) + (other.__price * other.quantity)
+        )
 
     @classmethod
     def new_product(
@@ -108,7 +110,7 @@ class Category:
 
 
 class CategoryIter:
-    """Дополнительное задание: вспомогательный класс-итератор."""
+    """Вспомогательный класс-итератор."""
 
     def __init__(self, category: Category) -> None:
         self.products = category.products_list
