@@ -3,6 +3,7 @@ from src.classes import (
     Category,
     CategoryIter,
     LawnGrass,
+    Order,
     Product,
     Smartphone,
     load_data_from_json,
@@ -24,20 +25,25 @@ def sample_products():
     return [p1, p2]
 
 
-def test_product_initialization():
-    """Тест инициализации базового Product."""
+def test_product_initialization(capsys):
+    """Тест инициализации базового Product и вывода миксина."""
     product = Product("Телевизор", "4K Smart TV", 50000.0, 3)
+    captured = capsys.readouterr()
+    assert "Product(" in captured.out
+    assert "'Телевизор'" in captured.out
     assert product.name == "Телевизор"
     assert product.description == "4K Smart TV"
     assert product.price == 50000.0
     assert product.quantity == 3
 
 
-def test_smartphone_initialization():
+def test_smartphone_initialization(capsys):
     """Тест инициализации дочернего класса Smartphone."""
     phone = Smartphone(
         "Samsung", "Flagman", 100000.0, 5, 95.5, "S23", 256, "Black"
     )
+    captured = capsys.readouterr()
+    assert "Smartphone(" in captured.out
     assert phone.name == "Samsung"
     assert phone.efficiency == 95.5
     assert phone.model == "S23"
@@ -45,11 +51,13 @@ def test_smartphone_initialization():
     assert phone.color == "Black"
 
 
-def test_lawn_grass_initialization():
+def test_lawn_grass_initialization(capsys):
     """Тест инициализации дочернего класса LawnGrass."""
     grass = LawnGrass(
         "Газон", "Элитный", 500.0, 20, "Россия", "7 дней", "Зеленый"
     )
+    captured = capsys.readouterr()
+    assert "LawnGrass(" in captured.out
     assert grass.name == "Газон"
     assert grass.country == "Россия"
     assert grass.germination_period == "7 дней"
@@ -79,6 +87,21 @@ def test_add_invalid_product(sample_products):
     category = Category("Электроника", "Гаджеты", sample_products)
     with pytest.raises(TypeError):
         category.add_product("Not a product")
+
+
+def test_order_creation():
+    """Тест создания заказа и его строкового отображения."""
+    product = Product("Ноутбук", "Игровой", 80000.0, 5)
+    order = Order(product, 2)
+    assert order.total_price == 160000.0
+    expected_str = (
+        "Заказ: Ноутбук, количество: 2 шт., "
+        "итоговая стоимость: 160000.0 руб."
+    )
+    assert str(order) == expected_str
+
+    with pytest.raises(TypeError):
+        Order("Не продукт", 1)
 
 
 def test_load_data_from_json(tmp_path):

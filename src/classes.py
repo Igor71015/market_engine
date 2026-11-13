@@ -1,7 +1,51 @@
+from abc import ABC, abstractmethod
 import json
 
 
-class Product:
+class BaseProduct(ABC):
+    """Абстрактный базовый класс для всех продуктов."""
+
+    @abstractmethod
+    def __str__(self) -> str:
+        pass
+
+    @abstractmethod
+    def __add__(self, other: "BaseProduct") -> float:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def new_product(
+        cls, product_data: dict, current_products: list | None = None
+    ) -> "BaseProduct":
+        pass
+
+    @property
+    @abstractmethod
+    def price(self) -> float:
+        pass
+
+    @price.setter
+    @abstractmethod
+    def price(self, new_price: float) -> None:
+        pass
+
+
+class CreationLogMixin:
+    """Класс-миксин для печати информации при создании объекта."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        print(repr(self))
+
+    def __repr__(self) -> str:
+        attrs = ", ".join(
+            repr(v) for k, v in self.__dict__.items()
+        )
+        return f"{self.__class__.__name__}({attrs})"
+
+
+class Product(CreationLogMixin, BaseProduct):
     """Базовый класс для представления товара."""
 
     def __init__(
@@ -11,6 +55,7 @@ class Product:
         self.description = description
         self.__price = price
         self.quantity = quantity
+        super().__init__()
 
     def __str__(self) -> str:
         """Строковое отображение продукта."""
@@ -82,11 +127,11 @@ class Smartphone(Product):
         memory: int,
         color: str,
     ) -> None:
-        super().__init__(name, description, price, quantity)
         self.efficiency = efficiency
         self.model = model
         self.memory = memory
         self.color = color
+        super().__init__(name, description, price, quantity)
 
 
 class LawnGrass(Product):
@@ -102,13 +147,21 @@ class LawnGrass(Product):
         germination_period: str,
         color: str,
     ) -> None:
-        super().__init__(name, description, price, quantity)
         self.country = country
         self.germination_period = germination_period
         self.color = color
+        super().__init__(name, description, price, quantity)
 
 
-class Category:
+class BaseContainer(ABC):
+    """Абстрактный класс для категорий и заказов (Дополнительное задание)."""
+
+    @abstractmethod
+    def __str__(self) -> str:
+        pass
+
+
+class Category(BaseContainer):
     """Класс для представления категории товаров."""
 
     category_count = 0
@@ -154,6 +207,24 @@ class Category:
     def products_list(self) -> list[Product]:
         """Возвращает приватный список объектов продуктов."""
         return self.__products
+
+
+class Order(BaseContainer):
+    """Класс для представления заказа (Дополнительное задание)."""
+
+    def __init__(self, product: Product, quantity: int) -> None:
+        if not isinstance(product, Product):
+            raise TypeError("В заказ можно добавить только продукт")
+        self.product = product
+        self.quantity = quantity
+        self.total_price = product.price * quantity
+
+    def __str__(self) -> str:
+        """Строковое отображение заказа."""
+        return (
+            f"Заказ: {self.product.name}, количество: {self.quantity} шт., "
+            f"итоговая стоимость: {self.total_price} руб."
+        )
 
 
 class CategoryIter:
