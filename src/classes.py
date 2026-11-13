@@ -1,16 +1,73 @@
+from abc import ABC, abstractmethod
 import json
 
 
-class Product:
-    """Класс для представления товара."""
+class BaseProduct(ABC):
+    """Абстрактный базовый класс для всех продуктов."""
+
+    @abstractmethod
+    def __str__(self) -> str:
+        pass
+
+    @abstractmethod
+    def __add__(self, other: "BaseProduct") -> float:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def new_product(
+        cls, product_data: dict, current_products: list | None = None
+    ) -> "BaseProduct":
+        pass
+
+    @property
+    @abstractmethod
+    def price(self) -> float:
+        pass
+
+    @price.setter
+    @abstractmethod
+    def price(self, new_price: float) -> None:
+        pass
+
+
+class CreationLogMixin:
+    """Класс-миксин для печати информации при создании объекта."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        print(repr(self))
+
+    def __repr__(self) -> str:
+        attrs = ", ".join(
+            repr(v) for k, v in self.__dict__.items()
+        )
+        return f"{self.__class__.__name__}({attrs})"
+
+
+class Product(CreationLogMixin, BaseProduct):
+    """Базовый класс для представления товара."""
 
     def __init__(
         self, name: str, description: str, price: float, quantity: int
     ) -> None:
         self.name = name
         self.description = description
-        self.__price = price  # Приватный атрибут цены
+        self.__price = price
         self.quantity = quantity
+        super().__init__()
+
+    def __str__(self) -> str:
+        """Строковое отображение продукта."""
+        return f"{self.name}, {self.__price} руб. Остаток: {self.quantity} шт."
+
+    def __add__(self, other: "Product") -> float:
+        """Сложение продуктов строго одного класса."""
+        if type(self) is not type(other):
+            raise TypeError("Нельзя складывать товары разных категорий")
+        return (
+            (self.__price * self.quantity) + (other.__price * other.quantity)
+        )
 
     @classmethod
     def new_product(
@@ -56,7 +113,55 @@ class Product:
         self.__price = new_price
 
 
-class Category:
+class Smartphone(Product):
+    """Класс для представления смартфонов (наследуется от Product)."""
+
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        price: float,
+        quantity: int,
+        efficiency: float,
+        model: str,
+        memory: int,
+        color: str,
+    ) -> None:
+        self.efficiency = efficiency
+        self.model = model
+        self.memory = memory
+        self.color = color
+        super().__init__(name, description, price, quantity)
+
+
+class LawnGrass(Product):
+    """Класс для представления газонной травы (наследуется от Product)."""
+
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        price: float,
+        quantity: int,
+        country: str,
+        germination_period: str,
+        color: str,
+    ) -> None:
+        self.country = country
+        self.germination_period = germination_period
+        self.color = color
+        super().__init__(name, description, price, quantity)
+
+
+class BaseContainer(ABC):
+    """Абстрактный класс для категорий и заказов (Дополнительное задание)."""
+
+    @abstractmethod
+    def __str__(self) -> str:
+        pass
+
+
+class Category(BaseContainer):
     """Класс для представления категории товаров."""
 
     category_count = 0
@@ -67,7 +172,7 @@ class Category:
     ) -> None:
         self.name = name
         self.description = description
-        self.__products = []  # Приватный атрибут списка товаров
+        self.__products = []
 
         Category.category_count += 1
 
@@ -75,21 +180,71 @@ class Category:
             for product in products:
                 self.add_product(product)
 
+    def __str__(self) -> str:
+        """Строковое отображение категории."""
+        total_quantity = sum(product.quantity for product in self.__products)
+        return f"{self.name}, количество продуктов: {total_quantity} шт."
+
     def add_product(self, product: Product) -> None:
-        """Добавляет продукт в категорию и обновляет счетчик товаров."""
+        """Добавляет продукт (или его наследников) в категорию."""
+        if not isinstance(product, Product):
+            raise TypeError(
+                "Можно добавлять только объекты класса Product "
+                "и его наследников"
+            )
         self.__products.append(product)
         Category.product_count += 1
 
     @property
     def products(self) -> str:
-        """Геттер возвращает список товаров в виде отформатированных строк."""
+        """Геттер возвращает список товаров."""
         result = ""
         for product in self.__products:
-            result += (
-                f"{product.name}, {product.price} руб. "
-                f"Остаток: {product.quantity} шт.\n"
-            )
+            result += f"{str(product)}\n"
         return result
+
+    @property
+    def products_list(self) -> list[Product]:
+        """Возвращает приватный список объектов продуктов."""
+        return self.__products
+
+
+class Order(BaseContainer):
+    """Класс для представления заказа (Дополнительное задание)."""
+
+    def __init__(self, product: Product, quantity: int) -> None:
+        if not isinstance(product, Product):
+            raise TypeError("В заказ можно добавить только продукт")
+        self.product = product
+        self.quantity = quantity
+        self.total_price = product.price * quantity
+
+    def __str__(self) -> str:
+        """Строковое отображение заказа."""
+        return (
+            f"Заказ: {self.product.name}, количество: {self.quantity} шт., "
+            f"итоговая стоимость: {self.total_price} руб."
+        )
+
+
+class CategoryIter:
+    """Вспомогательный класс-итератор."""
+
+    def __init__(self, category: Category) -> None:
+        self.products = category.products_list
+        self.index = 0
+
+    def __iter__(self) -> "CategoryIter":
+        self.index = 0
+        return self
+
+    def __next__(self) -> Product:
+        if self.index < len(self.products):
+            product = self.products[self.index]
+            self.index += 1
+            return product
+        else:
+            raise StopIteration
 
 
 def load_data_from_json(file_path: str) -> list[Category]:

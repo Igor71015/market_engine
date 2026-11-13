@@ -1,5 +1,13 @@
 import pytest
-from src.classes import Category, Product, load_data_from_json
+from src.classes import (
+    Category,
+    CategoryIter,
+    LawnGrass,
+    Order,
+    Product,
+    Smartphone,
+    load_data_from_json,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -17,17 +25,47 @@ def sample_products():
     return [p1, p2]
 
 
-def test_product_initialization():
-    """Тест корректности инициализации объекта Product."""
+def test_product_initialization(capsys):
+    """Тест инициализации базового Product и вывода миксина."""
     product = Product("Телевизор", "4K Smart TV", 50000.0, 3)
+    captured = capsys.readouterr()
+    assert "Product(" in captured.out
+    assert "'Телевизор'" in captured.out
     assert product.name == "Телевизор"
     assert product.description == "4K Smart TV"
     assert product.price == 50000.0
     assert product.quantity == 3
 
 
+def test_smartphone_initialization(capsys):
+    """Тест инициализации дочернего класса Smartphone."""
+    phone = Smartphone(
+        "Samsung", "Flagman", 100000.0, 5, 95.5, "S23", 256, "Black"
+    )
+    captured = capsys.readouterr()
+    assert "Smartphone(" in captured.out
+    assert phone.name == "Samsung"
+    assert phone.efficiency == 95.5
+    assert phone.model == "S23"
+    assert phone.memory == 256
+    assert phone.color == "Black"
+
+
+def test_lawn_grass_initialization(capsys):
+    """Тест инициализации дочернего класса LawnGrass."""
+    grass = LawnGrass(
+        "Газон", "Элитный", 500.0, 20, "Россия", "7 дней", "Зеленый"
+    )
+    captured = capsys.readouterr()
+    assert "LawnGrass(" in captured.out
+    assert grass.name == "Газон"
+    assert grass.country == "Россия"
+    assert grass.germination_period == "7 дней"
+    assert grass.color == "Зеленый"
+
+
 def test_category_initialization(sample_products):
-    """Тест корректности инициализации объекта Category."""
+    """Тест инициализации Category."""
     category = Category("Электроника", "Гаджеты и техника", sample_products)
     assert category.name == "Электроника"
     assert category.description == "Гаджеты и техника"
@@ -35,13 +73,35 @@ def test_category_initialization(sample_products):
 
 
 def test_category_counters(sample_products):
-    """Тест подсчета количества категорий и уникальных продуктов."""
+    """Тест подсчета количества категорий и продуктов."""
     assert Category.category_count == 0
     assert Category.product_count == 0
 
     Category("Электроника", "Гаджеты", sample_products)
     assert Category.category_count == 1
     assert Category.product_count == 2
+
+
+def test_add_invalid_product(sample_products):
+    """Тест запрета добавления посторонних объектов в категорию."""
+    category = Category("Электроника", "Гаджеты", sample_products)
+    with pytest.raises(TypeError):
+        category.add_product("Not a product")
+
+
+def test_order_creation():
+    """Тест создания заказа и его строкового отображения."""
+    product = Product("Ноутбук", "Игровой", 80000.0, 5)
+    order = Order(product, 2)
+    assert order.total_price == 160000.0
+    expected_str = (
+        "Заказ: Ноутбук, количество: 2 шт., "
+        "итоговая стоимость: 160000.0 руб."
+    )
+    assert str(order) == expected_str
+
+    with pytest.raises(TypeError):
+        Order("Не продукт", 1)
 
 
 def test_load_data_from_json(tmp_path):
@@ -100,3 +160,44 @@ def test_new_product_duplicate():
     updated_product = Product.new_product(data, [p1])
     assert updated_product.quantity == 8
     assert updated_product.price == 1200.0
+
+
+def test_product_str():
+    """Тест магического метода __str__ класса Product."""
+    product = Product("Телевизор", "4K Smart TV", 50000.0, 3)
+    assert str(product) == "Телевизор, 50000.0 руб. Остаток: 3 шт."
+
+
+def test_category_str(sample_products):
+    """Тест магического метода __str__ класса Category."""
+    category = Category("Электроника", "Гаджеты", sample_products)
+    assert str(category) == "Электроника, количество продуктов: 15 шт."
+
+
+def test_product_add_same_class():
+    """Тест сложения товаров одинакового класса."""
+    p1 = Product("Товар A", "Описание", 100.0, 10)
+    p2 = Product("Товар B", "Описание", 200.0, 2)
+    assert p1 + p2 == 1400.0
+
+
+def test_product_add_different_classes():
+    """Тест запрета сложения товаров разных классов."""
+    phone = Smartphone(
+        "Samsung", "Flagman", 100000.0, 5, 95.5, "S23", 256, "Black"
+    )
+    grass = LawnGrass(
+        "Газон", "Элитный", 500.0, 20, "Россия", "7 дней", "Зеленый"
+    )
+    with pytest.raises(TypeError):
+        _ = phone + grass
+
+
+def test_category_iterator(sample_products):
+    """Тест итератора для обхода товаров категории."""
+    category = Category("Электроника", "Гаджеты", sample_products)
+    iterator = CategoryIter(category)
+
+    products_iterated = [product for product in iterator]
+    assert len(products_iterated) == 2
+    assert products_iterated[0].name == "Samsung Galaxy S23 Ultra"
