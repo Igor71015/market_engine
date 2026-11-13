@@ -2,7 +2,7 @@ import json
 
 
 class Product:
-    """Класс для представления товара."""
+    """Базовый класс для представления товара."""
 
     def __init__(
         self, name: str, description: str, price: float, quantity: int
@@ -13,11 +13,13 @@ class Product:
         self.quantity = quantity
 
     def __str__(self) -> str:
-        """Строковое отображение продукта с приватным атрибутом."""
+        """Строковое отображение продукта."""
         return f"{self.name}, {self.__price} руб. Остаток: {self.quantity} шт."
 
     def __add__(self, other: "Product") -> float:
-        """Сложение продуктов с использованием приватных атрибутов."""
+        """Сложение продуктов строго одного класса."""
+        if type(self) is not type(other):
+            raise TypeError("Нельзя складывать товары разных категорий")
         return (
             (self.__price * self.quantity) + (other.__price * other.quantity)
         )
@@ -66,6 +68,46 @@ class Product:
         self.__price = new_price
 
 
+class Smartphone(Product):
+    """Класс для представления смартфонов (наследуется от Product)."""
+
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        price: float,
+        quantity: int,
+        efficiency: float,
+        model: str,
+        memory: int,
+        color: str,
+    ) -> None:
+        super().__init__(name, description, price, quantity)
+        self.efficiency = efficiency
+        self.model = model
+        self.memory = memory
+        self.color = color
+
+
+class LawnGrass(Product):
+    """Класс для представления газонной травы (наследуется от Product)."""
+
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        price: float,
+        quantity: int,
+        country: str,
+        germination_period: str,
+        color: str,
+    ) -> None:
+        super().__init__(name, description, price, quantity)
+        self.country = country
+        self.germination_period = germination_period
+        self.color = color
+
+
 class Category:
     """Класс для представления категории товаров."""
 
@@ -91,7 +133,12 @@ class Category:
         return f"{self.name}, количество продуктов: {total_quantity} шт."
 
     def add_product(self, product: Product) -> None:
-        """Добавляет продукт в категорию."""
+        """Добавляет продукт (или его наследников) в категорию."""
+        if not isinstance(product, Product):
+            raise TypeError(
+                "Можно добавлять только объекты класса Product "
+                "и его наследников"
+            )
         self.__products.append(product)
         Category.product_count += 1
 
