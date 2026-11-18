@@ -37,6 +37,14 @@ def test_product_initialization(capsys):
     assert product.quantity == 3
 
 
+def test_product_zero_quantity():
+    """Тест выброса ошибки ValueError при нулевом количестве товара."""
+    with pytest.raises(
+        ValueError, match="Товар с нулевым количеством не может быть добавлен"
+    ):
+        Product("Бракованный товар", "Описание", 1000.0, 0)
+
+
 def test_smartphone_initialization(capsys):
     """Тест инициализации дочернего класса Smartphone."""
     phone = Smartphone(
@@ -70,6 +78,15 @@ def test_category_initialization(sample_products):
     assert category.name == "Электроника"
     assert category.description == "Гаджеты и техника"
     assert "Samsung Galaxy S23 Ultra" in category.products
+
+
+def test_category_middle_price(sample_products):
+    """Тест расчета средней цены товаров в обычной и пустой категориях."""
+    category = Category("Электроника", "Гаджеты", sample_products)
+    assert category.middle_price() == 135000.0
+
+    empty_category = Category("Пустая категория", "Без товаров", [])
+    assert empty_category.middle_price() == 0
 
 
 def test_category_counters(sample_products):

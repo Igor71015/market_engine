@@ -51,6 +51,10 @@ class Product(CreationLogMixin, BaseProduct):
     def __init__(
         self, name: str, description: str, price: float, quantity: int
     ) -> None:
+        if quantity == 0:
+            raise ValueError(
+                "Товар с нулевым количеством не может быть добавлен"
+            )
         self.name = name
         self.description = description
         self.__price = price
@@ -154,7 +158,7 @@ class LawnGrass(Product):
 
 
 class BaseContainer(ABC):
-    """Абстрактный класс для категорий и заказов (Дополнительное задание)."""
+    """Абстрактный класс для категорий и заказов."""
 
     @abstractmethod
     def __str__(self) -> str:
@@ -195,6 +199,14 @@ class Category(BaseContainer):
         self.__products.append(product)
         Category.product_count += 1
 
+    def middle_price(self) -> float:
+        """Подсчитывает средний ценник всех товаров в категории."""
+        try:
+            total_price = sum(product.price for product in self.__products)
+            return total_price / len(self.__products)
+        except ZeroDivisionError:
+            return 0
+
     @property
     def products(self) -> str:
         """Геттер возвращает список товаров."""
@@ -210,7 +222,7 @@ class Category(BaseContainer):
 
 
 class Order(BaseContainer):
-    """Класс для представления заказа (Дополнительное задание)."""
+    """Класс для представления заказа."""
 
     def __init__(self, product: Product, quantity: int) -> None:
         if not isinstance(product, Product):
